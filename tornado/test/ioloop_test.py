@@ -11,7 +11,7 @@ import threading
 import time
 
 from tornado import gen
-from tornado.ioloop import IOLoop, TimeoutError, PollIOLoop, PeriodicCallback
+from tornado.ioloop import IOLoop, TimeoutError, PollIOLoop, PeriodicCallback, PeriodicCallbackWithCount
 from tornado.log import app_log
 from tornado.platform.select import _Select
 from tornado.stack_context import ExceptionStackContext, StackContext, wrap, NullContext
@@ -656,6 +656,41 @@ class TestPeriodicCallback(unittest.TestCase):
         self.io_loop.start()
         self.assertEqual(calls, expected)
 
+class TestPeriodicCallbackWithCount(unittest.TestCase):
+    def setUp(self):
+        self.io_loop = FakeTimeIOLoop()
+        self.io_loop.make_current()
+
+    def tearDown(self):
+        self.io_loop.close()
+
+    def test_basic(self):
+        """
+        Number of calls should be equal to count
+        """
+        calls = []
+
+        def cb():
+            calls.append(self.io_loop.time())
+        pc = PeriodicCallbackWithCount(cb, 10000, 2)
+        pc.start()
+        self.io_loop.call_later(50, self.io_loop.stop)
+        self.io_loop.start()
+        self.assertEqual(calls, [1010, 1020])
+
+    def test_infinit(self):
+        """
+        With count equals 0, the loop should run forever.
+        """
+        calls = []
+
+        def cb():
+            calls.append(self.io_loop.time())
+        pcc = PeriodicCallbackWithCount(cb, 10000, 0)
+        pcc.start()
+        self.io_loop.call_later(50, self.io_loop.stop)
+        self.io_loop.start()
+        self.assertEqual(calls, [1010, 1020, 1030, 1040, 1050])
 
 if __name__ == "__main__":
     unittest.main()

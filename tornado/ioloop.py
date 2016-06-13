@@ -1054,3 +1054,23 @@ class PeriodicCallback(object):
                                                   callback_time_sec) + 1) * callback_time_sec
 
             self._timeout = self.io_loop.add_timeout(self._next_timeout, self._run)
+
+
+class PeriodicCallbackWithCount(PeriodicCallback):
+    def __init__(self, callback, callback_time, count=None, io_loop=None):
+        """Add count to the constructor.
+        count: the number that callback will run
+                0 means it will run infinit times.
+        """
+        super(PeriodicCallbackWithCount, self).__init__(callback, callback_time, io_loop)
+        self.count = count if count is not None else 0
+        self.i = 0
+
+    def _schedule_next(self):
+        self.i += 1
+        if self.i <= self.count or self.count == 0:
+            print("call parent to schedule next run")
+            super(PeriodicCallbackWithCount, self)._schedule_next()
+        else:
+            print("stopped", repr(self))
+            self.stop()
